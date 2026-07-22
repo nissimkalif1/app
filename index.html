@@ -1,0 +1,302 @@
+<script>
+var state = {
+  pkg: null, pkgName: null, pkgPrice: 0,
+  kids: 30, shukPeople: 0, shukPrice: 0,
+  snokon: false, barad: false,
+  loc: null, time: null,
+  name: '', phone: ''
+};
+var history = [];
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var el = document.getElementById('screen-' + id);
+  if (el) { el.classList.add('active'); window.scrollTo(0,0); }
+}
+
+function nav(id) {
+  var cur = document.querySelector('.screen.active');
+  if (cur) history.push(cur.id.replace('screen-',''));
+  showScreen(id);
+}
+
+function goBack() {
+  if (history.length > 0) showScreen(history.pop());
+}
+
+function startCalc() { nav('step1'); }
+
+function selPkg(pkg, price, name) {
+  state.pkg = pkg; state.pkgPrice = price; state.pkgName = name;
+  document.querySelectorAll('.pkg-card').forEach(function(c){ c.classList.remove('sel'); });
+  document.getElementById('pkg-' + pkg).classList.add('sel');
+  var btn = document.getElementById('btn1');
+  btn.disabled = false; btn.style.opacity = '1';
+}
+
+function continueStep1() {
+  if (!state.pkg) return;
+  if (state.pkg === 'shuk') nav('step1b');
+  else nav('step2');
+}
+
+function selShuk(people, price) {
+  state.shukPeople = people; state.shukPrice = price; state.pkgPrice = price;
+  document.querySelectorAll('.shuk-opt').forEach(function(o){ o.classList.remove('sel'); });
+  document.getElementById('shuk-' + people).classList.add('sel');
+  var btn = document.getElementById('btn1b');
+  btn.disabled = false; btn.style.opacity = '1';
+}
+
+function shukCustom() {
+  var msg = encodeURIComponent('שלום! אני מעוניין/ת בשולחן שוק מותאם אישית (מעל 60 אנשים). אשמח לקבל הצעת מחיר מיוחדת!');
+  window.open('https://wa.me/972508341820?text=' + msg, '_blank');
+}
+
+function continueStep1b() {
+  if (!state.shukPeople) return;
+  updateStep4Labels('shuk');
+  nav('step4');
+}
+
+function changeKids(d) {
+  var v = state.kids + d;
+  if (v < 30 || v > 250) return;
+  state.kids = v;
+  document.getElementById('kids-num').textContent = v;
+  updateKidsTip();
+}
+
+function calcExtraKids(extra) {
+  if (state.pkg === 'premium') return extra * 50;
+  var cost = 0;
+  if (extra <= 5) cost = extra * 35;
+  else if (extra <= 10) cost = 5*35 + (extra-5)*25;
+  else cost = 5*35 + 5*25 + (extra-10)*20;
+  return cost;
+}
+
+function updateKidsTip() {
+  var extra = state.kids - 30;
+  var el = document.getElementById('kids-tip');
+  if (extra === 0) {
+    el.textContent = '✨ 30 ילדים – הבסיס כלול בחבילה!';
+  } else {
+    var cost = calcExtraKids(extra);
+    el.textContent = '✨ ' + extra + ' ילדים נוספים = +' + cost.toLocaleString('he-IL') + '₪';
+  }
+}
+
+function continueStep2() {
+  if (state.pkg === 'premium') {
+    document.getElementById('premium-note').style.display = 'list-item';
+  }
+  nav('step3');
+}
+
+function toggleAddon(a) {
+  state[a] = !state[a];
+  var card = document.getElementById('addon-' + a);
+  var chk = document.getElementById('chk-' + a);
+  if (state[a]) { card.classList.add('sel'); chk.textContent = '✓'; }
+  else { card.classList.remove('sel'); chk.textContent = ''; }
+}
+
+function continueStep3() { nav('step4'); }
+
+function updateStep4Labels(flow) {
+  var isShuk = flow === 'shuk';
+  var step = isShuk ? '3' : '4';
+  var total = isShuk ? '5' : '6';
+  var pct = isShuk ? '60' : '67';
+  var lbl = document.getElementById('lbl4');
+  var fill = document.getElementById('fill4');
+  if (lbl) lbl.innerHTML = '<span>שלב ' + step + ' מתוך ' + total + '</span><span>מיקום</span>';
+  if (fill) fill.style.width = pct + '%';
+  var lbl5 = document.getElementById('lbl5');
+  var fill5 = document.getElementById('fill5');
+  var step5 = isShuk ? '4' : '5';
+  var pct5 = isShuk ? '80' : '83';
+  if (lbl5) lbl5.innerHTML = '<span>שלב ' + step5 + ' מתוך ' + total + '</span><span>שעת האירוע</span>';
+  if (fill5) fill5.style.width = pct5 + '%';
+  var lbl6 = document.getElementById('lbl6');
+  var step6 = isShuk ? '5' : '6';
+  if (lbl6) lbl6.innerHTML = '<span>שלב ' + step6 + ' מתוך ' + total + '</span><span>פרטי יצירת קשר</span>';
+}
+
+function selLoc(l) {
+  state.loc = l;
+  document.querySelectorAll('[id^="loc-"]').forEach(function(b){ b.classList.remove('sel'); });
+  document.getElementById('loc-' + l).classList.add('sel');
+  var btn = document.getElementById('btn4');
+  btn.disabled = false; btn.style.opacity = '1';
+}
+
+function continueStep4() {
+  if (!state.loc) return;
+  nav('step5');
+}
+
+function selTime(t) {
+  state.time = t;
+  document.querySelectorAll('[id^="time-"]').forEach(function(b){ b.classList.remove('sel'); });
+  document.getElementById('time-' + t).classList.add('sel');
+  var btn = document.getElementById('btn5');
+  btn.disabled = false; btn.style.opacity = '1';
+}
+
+function continueStep5() {
+  if (!state.time) return;
+  nav('step6');
+}
+
+function chkContact() {
+  var n = document.getElementById('inp-name').value.trim();
+  var p = document.getElementById('inp-phone').value.trim();
+  var btn = document.getElementById('btn6');
+  if (n.length >= 2 && p.length >= 9) {
+    btn.disabled = false; btn.style.opacity = '1';
+  } else {
+    btn.disabled = true; btn.style.opacity = '0.5';
+  }
+}
+
+function calcPrice() {
+  var total = state.pkgPrice;
+  if (state.pkg !== 'shuk') {
+    var extra = state.kids - 30;
+    if (extra > 0) total += calcExtraKids(extra);
+    if (state.snokon) total += 400;
+    if (state.barad) total += 400;
+  }
+  if (state.loc === 'outside') total += 150;
+  if (state.time === 'night') total = total * 1.15;
+  return total;
+}
+
+function roundNice(n) { return Math.round(n / 50) * 50; }
+function fmt(n) { return n.toLocaleString('he-IL') + '₪'; }
+
+function doCalc() {
+  var n = document.getElementById('inp-name').value.trim();
+  var p = document.getElementById('inp-phone').value.trim();
+  if (!n || !p) return;
+  state.name = n; state.phone = p;
+  nav('loading');
+  runLoader();
+}
+
+var loadMsgs = [
+  {e:'🎉', t:'מחשבים לכם את האירוע המושלם...'},
+  {e:'🔍', t:'בודקים זמינות צוות...'},
+  {e:'🎈', t:'מתאימים תפריט לפי כמות ילדים...'},
+  {e:'💰', t:'מוצאים לכם את המחיר הכי משתלם...'},
+  {e:'✨', t:'כמעט מוכן...'}
+];
+
+function runLoader() {
+  var i = 0;
+  var emo = document.getElementById('load-emoji');
+  var txt = document.getElementById('load-text');
+  function next() {
+    txt.style.opacity = '0';
+    setTimeout(function(){
+      emo.textContent = loadMsgs[i % loadMsgs.length].e;
+      txt.textContent = loadMsgs[i % loadMsgs.length].t;
+      txt.style.opacity = '1';
+      i++;
+    }, 350);
+  }
+  next();
+  var iv = setInterval(next, 750);
+  setTimeout(function(){ clearInterval(iv); showResults(); }, 3000);
+}
+
+function showResults() {
+  var total = calcPrice();
+  var minP = roundNice(total * 0.80);
+  var maxP = roundNice(total * 1.05);
+  document.getElementById('res-range').textContent = fmt(minP) + ' – ' + fmt(maxP);
+
+  var addons = [];
+  if (state.snokon) addons.push('סנוקון');
+  if (state.barad) addons.push('ברד');
+  var locTxt = state.loc === 'gushdan' ? 'גוש דן' : 'מחוץ לגוש דן';
+  var timeTxt = state.time === 'afternoon' ? 'אחר הצהריים' : 'ערב / לילה';
+  var peopleTxt = state.pkg === 'shuk' ? state.shukPeople + ' אנשים' : state.kids + ' ילדים';
+
+  var rows = '';
+  rows += '<div class="sum-row"><span class="sum-label">שם</span><span class="sum-val">' + state.name + '</span></div>';
+  rows += '<div class="sum-row"><span class="sum-label">חבילה</span><span class="sum-val">' + state.pkgName + '</span></div>';
+  rows += '<div class="sum-row"><span class="sum-label">כמות</span><span class="sum-val">' + peopleTxt + '</span></div>';
+  if (state.pkg !== 'shuk') {
+    rows += '<div class="sum-row"><span class="sum-label">תוספות</span><span class="sum-val">' + (addons.length ? addons.join(', ') : 'ללא תוספות') + '</span></div>';
+  }
+  rows += '<div class="sum-row"><span class="sum-label">מיקום</span><span class="sum-val">' + locTxt + '</span></div>';
+  rows += '<div class="sum-row"><span class="sum-label">שעה</span><span class="sum-val">' + timeTxt + '</span></div>';
+  document.getElementById('res-summary').innerHTML = rows;
+
+  var addonsMsg = state.pkg !== 'shuk' ? (addons.length ? addons.join(', ') : 'ללא תוספות') : 'לא רלוונטי';
+  var waMsg = 'שלום! קיבלתי הצעת מחיר דרך האתר 🎉\n\n'
+    + 'שם: ' + state.name + '\n'
+    + 'טלפון: ' + state.phone + '\n'
+    + 'חבילה: ' + state.pkgName + '\n'
+    + 'כמות: ' + peopleTxt + '\n'
+    + 'תוספות: ' + addonsMsg + '\n'
+    + 'מיקום: ' + locTxt + '\n'
+    + 'שעה: ' + timeTxt + '\n'
+    + 'טווח מחיר: ' + fmt(minP) + ' – ' + fmt(maxP) + '\n\n'
+    + 'אשמח לקבל מחיר מדויק ולסגור! 😊';
+  document.getElementById('wa-btn').href = 'https://wa.me/972508341820?text=' + encodeURIComponent(waMsg);
+
+  nav('results');
+  confetti();
+}
+
+function confetti() {
+  var wrap = document.getElementById('confetti');
+  wrap.innerHTML = '';
+  var colors = ['#FF6B9D','#FFD700','#9B59B6','#3498DB','#FF6B35','#27AE60','#FF4444'];
+  for (var i = 0; i < 60; i++) {
+    var p = document.createElement('div');
+    p.className = 'conf';
+    p.style.cssText = 'left:' + (Math.random()*100) + '%;'
+      + 'width:' + (Math.random()*10+5) + 'px;'
+      + 'height:' + (Math.random()*10+5) + 'px;'
+      + 'background:' + colors[Math.floor(Math.random()*colors.length)] + ';'
+      + 'animation-duration:' + (Math.random()*2+2) + 's;'
+      + 'animation-delay:' + (Math.random()*1.5) + 's;';
+    wrap.appendChild(p);
+  }
+  setTimeout(function(){ wrap.innerHTML = ''; }, 6000);
+}
+
+function restart() {
+  state = { pkg:null, pkgName:null, pkgPrice:0, kids:30, shukPeople:0, shukPrice:0,
+    snokon:false, barad:false, loc:null, time:null, name:'', phone:'' };
+  history = [];
+  document.querySelectorAll('.pkg-card').forEach(function(c){ c.classList.remove('sel'); });
+  document.querySelectorAll('.shuk-opt').forEach(function(o){ o.classList.remove('sel'); });
+  document.querySelectorAll('.addon-card').forEach(function(c){ c.classList.remove('sel'); });
+  document.querySelectorAll('.opt-btn').forEach(function(b){ b.classList.remove('sel'); });
+  document.querySelectorAll('[id^="chk-"]').forEach(function(c){ c.textContent=''; });
+  document.getElementById('kids-num').textContent = '30';
+  document.getElementById('kids-tip').textContent = '✨ 30 ילדים – הבסיס כלול בחבילה!';
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-phone').value = '';
+  ['btn1','btn1b','btn4','btn5','btn6'].forEach(function(id){
+    var b = document.getElementById(id);
+    if(b){ b.disabled=true; b.style.opacity='0.5'; }
+  });
+  showScreen('hero');
+}
+
+// Wire up step4 labels for regular flow when navigating from step3
+var _origContinueStep3 = continueStep3;
+continueStep3 = function() {
+  updateStep4Labels('regular');
+  nav('step4');
+};
+</script>
+</body>
+</html>
