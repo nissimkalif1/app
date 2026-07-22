@@ -1,302 +1,288 @@
-<script>
-var state = {
-  pkg: null, pkgName: null, pkgPrice: 0,
-  kids: 30, shukPeople: 0, shukPrice: 0,
-  snokon: false, barad: false,
-  loc: null, time: null,
-  name: '', phone: ''
-};
-var history = [];
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מרכז ניהול פיננסי</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  var el = document.getElementById('screen-' + id);
-  if (el) { el.classList.add('active'); window.scrollTo(0,0); }
-}
+<div class="app">
 
-function nav(id) {
-  var cur = document.querySelector('.screen.active');
-  if (cur) history.push(cur.id.replace('screen-',''));
-  showScreen(id);
-}
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-icon">💰</span>
+      <span class="brand-text">הפיננסים שלי</span>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="dashboard"><span>📊</span> דשבורד</button>
+      <button class="nav-btn" data-view="income"><span>📈</span> הכנסות</button>
+      <button class="nav-btn" data-view="expenses"><span>📉</span> הוצאות</button>
+      <button class="nav-btn" data-view="pnl"><span>🧮</span> רווח והפסד</button>
+      <button class="nav-btn" data-view="import"><span>🔄</span> ייבוא מקארד קום</button>
+      <button class="nav-btn" data-view="reports"><span>🖨️</span> דוחות וייצוא</button>
+      <button class="nav-btn" data-view="settings"><span>⚙️</span> הגדרות</button>
+    </nav>
+    <div class="sidebar-footer">נתונים נשמרים בדפדפן שלך בלבד</div>
+  </aside>
 
-function goBack() {
-  if (history.length > 0) showScreen(history.pop());
-}
+  <main class="main">
 
-function startCalc() { nav('step1'); }
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="view active">
+      <div class="view-header">
+        <h1>דשבורד פיננסי</h1>
+        <p class="sub">סקירה כללית של המצב הכלכלי שלך</p>
+      </div>
 
-function selPkg(pkg, price, name) {
-  state.pkg = pkg; state.pkgPrice = price; state.pkgName = name;
-  document.querySelectorAll('.pkg-card').forEach(function(c){ c.classList.remove('sel'); });
-  document.getElementById('pkg-' + pkg).classList.add('sel');
-  var btn = document.getElementById('btn1');
-  btn.disabled = false; btn.style.opacity = '1';
-}
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-green">
+          <div class="kpi-label">סה"כ הכנסות</div>
+          <div class="kpi-value" id="kpi-total-income">₪0</div>
+        </div>
+        <div class="kpi-card kpi-red">
+          <div class="kpi-label">סה"כ הוצאות</div>
+          <div class="kpi-value" id="kpi-total-expenses">₪0</div>
+        </div>
+        <div class="kpi-card kpi-purple">
+          <div class="kpi-label">רווח נקי (הכל)</div>
+          <div class="kpi-value" id="kpi-net-profit">₪0</div>
+        </div>
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-label">רווח החודש</div>
+          <div class="kpi-value" id="kpi-month-profit">₪0</div>
+        </div>
+      </div>
 
-function continueStep1() {
-  if (!state.pkg) return;
-  if (state.pkg === 'shuk') nav('step1b');
-  else nav('step2');
-}
+      <div class="chart-grid">
+        <div class="chart-card wide">
+          <h3>הכנסות מול הוצאות — 12 חודשים אחרונים</h3>
+          <canvas id="chart-monthly"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>הוצאות לפי קטגוריה</h3>
+          <canvas id="chart-expense-cat"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>הכנסות לפי קטגוריה</h3>
+          <canvas id="chart-income-cat"></canvas>
+        </div>
+        <div class="chart-card wide">
+          <h3>מגמת רווח מצטבר</h3>
+          <canvas id="chart-cumulative"></canvas>
+        </div>
+      </div>
+    </section>
 
-function selShuk(people, price) {
-  state.shukPeople = people; state.shukPrice = price; state.pkgPrice = price;
-  document.querySelectorAll('.shuk-opt').forEach(function(o){ o.classList.remove('sel'); });
-  document.getElementById('shuk-' + people).classList.add('sel');
-  var btn = document.getElementById('btn1b');
-  btn.disabled = false; btn.style.opacity = '1';
-}
+    <!-- INCOME -->
+    <section id="view-income" class="view">
+      <div class="view-header row">
+        <div>
+          <h1>הכנסות</h1>
+          <p class="sub">כל ההכנסות שלך במקום אחד</p>
+        </div>
+        <button class="btn btn-primary" onclick="openTxModal('income')">+ הוספת הכנסה</button>
+      </div>
+      <div class="filter-bar" id="filter-income"></div>
+      <div class="table-wrap">
+        <table class="tx-table" id="table-income">
+          <thead>
+            <tr><th>תאריך</th><th>קטגוריה</th><th>תיאור</th><th>מקור</th><th>סכום</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
 
-function shukCustom() {
-  var msg = encodeURIComponent('שלום! אני מעוניין/ת בשולחן שוק מותאם אישית (מעל 60 אנשים). אשמח לקבל הצעת מחיר מיוחדת!');
-  window.open('https://wa.me/972508341820?text=' + msg, '_blank');
-}
+    <!-- EXPENSES -->
+    <section id="view-expenses" class="view">
+      <div class="view-header row">
+        <div>
+          <h1>הוצאות</h1>
+          <p class="sub">כל ההוצאות שלך במקום אחד</p>
+        </div>
+        <button class="btn btn-primary" onclick="openTxModal('expense')">+ הוספת הוצאה</button>
+      </div>
+      <div class="filter-bar" id="filter-expense"></div>
+      <div class="table-wrap">
+        <table class="tx-table" id="table-expense">
+          <thead>
+            <tr><th>תאריך</th><th>קטגוריה</th><th>תיאור</th><th>מקור</th><th>סכום</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
 
-function continueStep1b() {
-  if (!state.shukPeople) return;
-  updateStep4Labels('shuk');
-  nav('step4');
-}
+    <!-- P&L -->
+    <section id="view-pnl" class="view">
+      <div class="view-header">
+        <h1>דוח רווח והפסד</h1>
+        <p class="sub">פירוט חודשי של הכנסות, הוצאות ורווח</p>
+      </div>
+      <div class="chart-card wide">
+        <h3>רווח חודשי</h3>
+        <canvas id="chart-pnl"></canvas>
+      </div>
+      <div class="table-wrap">
+        <table class="tx-table" id="table-pnl">
+          <thead>
+            <tr><th>חודש</th><th>הכנסות</th><th>הוצאות</th><th>רווח/הפסד</th><th>מצטבר</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
 
-function changeKids(d) {
-  var v = state.kids + d;
-  if (v < 30 || v > 250) return;
-  state.kids = v;
-  document.getElementById('kids-num').textContent = v;
-  updateKidsTip();
-}
+    <!-- IMPORT FROM CARDCOM -->
+    <section id="view-import" class="view">
+      <div class="view-header">
+        <h1>ייבוא דוח מקארד קום</h1>
+        <p class="sub">ייצאו דוח עסקאות מהמערכת של קארד קום כקובץ CSV (ייצוא ל-CSV/Excel) והעלו אותו כאן — המערכת תזהה את העמודות ותייבא את הנתונים אוטומטית. אם קארד קום מוריד קובץ XLS/XLSX, פתחו אותו ושמרו כ-CSV לפני ההעלאה.</p>
+      </div>
 
-function calcExtraKids(extra) {
-  if (state.pkg === 'premium') return extra * 50;
-  var cost = 0;
-  if (extra <= 5) cost = extra * 35;
-  else if (extra <= 10) cost = 5*35 + (extra-5)*25;
-  else cost = 5*35 + 5*25 + (extra-10)*20;
-  return cost;
-}
+      <div class="import-box" id="drop-zone">
+        <div class="import-icon">📁</div>
+        <p>גררו לכאן קובץ CSV, או לחצו לבחירה</p>
+        <p class="hint">נתמך: CSV (מופרד בפסיקים)</p>
+        <input type="file" id="file-input" accept=".csv,text/csv" hidden>
+      </div>
 
-function updateKidsTip() {
-  var extra = state.kids - 30;
-  var el = document.getElementById('kids-tip');
-  if (extra === 0) {
-    el.textContent = '✨ 30 ילדים – הבסיס כלול בחבילה!';
-  } else {
-    var cost = calcExtraKids(extra);
-    el.textContent = '✨ ' + extra + ' ילדים נוספים = +' + cost.toLocaleString('he-IL') + '₪';
-  }
-}
+      <div id="import-mapping" class="card" style="display:none">
+        <h3>שיוך עמודות</h3>
+        <p class="hint">בחרו איזו עמודה בקובץ מתאימה לכל שדה</p>
+        <div class="mapping-grid" id="mapping-fields"></div>
 
-function continueStep2() {
-  if (state.pkg === 'premium') {
-    document.getElementById('premium-note').style.display = 'list-item';
-  }
-  nav('step3');
-}
+        <div class="field-row">
+          <label>ייבוא בתור</label>
+          <select id="import-type">
+            <option value="income">הכנסה</option>
+            <option value="expense">הוצאה</option>
+          </select>
+          <label>קטגוריית ברירת מחדל</label>
+          <select id="import-category"></select>
+        </div>
 
-function toggleAddon(a) {
-  state[a] = !state[a];
-  var card = document.getElementById('addon-' + a);
-  var chk = document.getElementById('chk-' + a);
-  if (state[a]) { card.classList.add('sel'); chk.textContent = '✓'; }
-  else { card.classList.remove('sel'); chk.textContent = ''; }
-}
+        <h4>תצוגה מקדימה (5 שורות ראשונות)</h4>
+        <div class="table-wrap"><table class="tx-table" id="preview-table"><thead></thead><tbody></tbody></table></div>
 
-function continueStep3() { nav('step4'); }
+        <button class="btn btn-primary" onclick="runImport()">ייבא נתונים</button>
+        <span id="import-result" class="hint"></span>
+      </div>
 
-function updateStep4Labels(flow) {
-  var isShuk = flow === 'shuk';
-  var step = isShuk ? '3' : '4';
-  var total = isShuk ? '5' : '6';
-  var pct = isShuk ? '60' : '67';
-  var lbl = document.getElementById('lbl4');
-  var fill = document.getElementById('fill4');
-  if (lbl) lbl.innerHTML = '<span>שלב ' + step + ' מתוך ' + total + '</span><span>מיקום</span>';
-  if (fill) fill.style.width = pct + '%';
-  var lbl5 = document.getElementById('lbl5');
-  var fill5 = document.getElementById('fill5');
-  var step5 = isShuk ? '4' : '5';
-  var pct5 = isShuk ? '80' : '83';
-  if (lbl5) lbl5.innerHTML = '<span>שלב ' + step5 + ' מתוך ' + total + '</span><span>שעת האירוע</span>';
-  if (fill5) fill5.style.width = pct5 + '%';
-  var lbl6 = document.getElementById('lbl6');
-  var step6 = isShuk ? '5' : '6';
-  if (lbl6) lbl6.innerHTML = '<span>שלב ' + step6 + ' מתוך ' + total + '</span><span>פרטי יצירת קשר</span>';
-}
+      <div class="card">
+        <h3>היסטוריית ייבוא</h3>
+        <div class="table-wrap">
+          <table class="tx-table" id="table-import-history">
+            <thead><tr><th>תאריך ייבוא</th><th>שם קובץ</th><th>סוג</th><th>כמות רשומות</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-function selLoc(l) {
-  state.loc = l;
-  document.querySelectorAll('[id^="loc-"]').forEach(function(b){ b.classList.remove('sel'); });
-  document.getElementById('loc-' + l).classList.add('sel');
-  var btn = document.getElementById('btn4');
-  btn.disabled = false; btn.style.opacity = '1';
-}
+    <!-- REPORTS -->
+    <section id="view-reports" class="view">
+      <div class="view-header">
+        <h1>דוחות וייצוא</h1>
+        <p class="sub">הפיקו דוח לפי טווח תאריכים וייצאו לקובץ</p>
+      </div>
+      <div class="card">
+        <div class="field-row">
+          <label>מתאריך</label>
+          <input type="date" id="report-from">
+          <label>עד תאריך</label>
+          <input type="date" id="report-to">
+          <label>סוג</label>
+          <select id="report-type">
+            <option value="all">הכל</option>
+            <option value="income">הכנסות בלבד</option>
+            <option value="expense">הוצאות בלבד</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="exportCSV()">⬇️ ייצוא ל-Excel/CSV</button>
+          <button class="btn btn-outline" onclick="printReport()">🖨️ ייצוא ל-PDF (הדפסה)</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tx-table" id="table-report">
+          <thead><tr><th>תאריך</th><th>סוג</th><th>קטגוריה</th><th>תיאור</th><th>מקור</th><th>סכום</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
 
-function continueStep4() {
-  if (!state.loc) return;
-  nav('step5');
-}
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view">
+      <div class="view-header">
+        <h1>הגדרות</h1>
+        <p class="sub">ניהול קטגוריות, גיבוי ואיפוס נתונים</p>
+      </div>
 
-function selTime(t) {
-  state.time = t;
-  document.querySelectorAll('[id^="time-"]').forEach(function(b){ b.classList.remove('sel'); });
-  document.getElementById('time-' + t).classList.add('sel');
-  var btn = document.getElementById('btn5');
-  btn.disabled = false; btn.style.opacity = '1';
-}
+      <div class="card">
+        <h3>קטגוריות הכנסה</h3>
+        <div class="cat-list" id="cat-list-income"></div>
+        <div class="btn-row">
+          <input type="text" id="new-cat-income" placeholder="שם קטגוריה חדשה">
+          <button class="btn btn-outline" onclick="addCategory('income')">+ הוספה</button>
+        </div>
+      </div>
 
-function continueStep5() {
-  if (!state.time) return;
-  nav('step6');
-}
+      <div class="card">
+        <h3>קטגוריות הוצאה</h3>
+        <div class="cat-list" id="cat-list-expense"></div>
+        <div class="btn-row">
+          <input type="text" id="new-cat-expense" placeholder="שם קטגוריה חדשה">
+          <button class="btn btn-outline" onclick="addCategory('expense')">+ הוספה</button>
+        </div>
+      </div>
 
-function chkContact() {
-  var n = document.getElementById('inp-name').value.trim();
-  var p = document.getElementById('inp-phone').value.trim();
-  var btn = document.getElementById('btn6');
-  if (n.length >= 2 && p.length >= 9) {
-    btn.disabled = false; btn.style.opacity = '1';
-  } else {
-    btn.disabled = true; btn.style.opacity = '0.5';
-  }
-}
+      <div class="card">
+        <h3>גיבוי ושחזור</h3>
+        <p class="hint">כל הנתונים שלך נשמרים בדפדפן בלבד. מומלץ לשמור גיבוי מדי פעם.</p>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="backupData()">⬇️ הורדת גיבוי (JSON)</button>
+          <label class="btn btn-outline file-btn">⬆️ שחזור מגיבוי<input type="file" id="restore-input" accept=".json" hidden></label>
+        </div>
+      </div>
 
-function calcPrice() {
-  var total = state.pkgPrice;
-  if (state.pkg !== 'shuk') {
-    var extra = state.kids - 30;
-    if (extra > 0) total += calcExtraKids(extra);
-    if (state.snokon) total += 400;
-    if (state.barad) total += 400;
-  }
-  if (state.loc === 'outside') total += 150;
-  if (state.time === 'night') total = total * 1.15;
-  return total;
-}
+      <div class="card danger">
+        <h3>אזור מסוכן</h3>
+        <button class="btn btn-danger" onclick="resetAllData()">🗑️ איפוס כל הנתונים</button>
+      </div>
+    </section>
 
-function roundNice(n) { return Math.round(n / 50) * 50; }
-function fmt(n) { return n.toLocaleString('he-IL') + '₪'; }
+  </main>
+</div>
 
-function doCalc() {
-  var n = document.getElementById('inp-name').value.trim();
-  var p = document.getElementById('inp-phone').value.trim();
-  if (!n || !p) return;
-  state.name = n; state.phone = p;
-  nav('loading');
-  runLoader();
-}
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">הוספת הכנסה</h3>
+    <input type="hidden" id="tx-id">
+    <input type="hidden" id="tx-type">
+    <div class="field-col">
+      <label>תאריך</label>
+      <input type="date" id="tx-date">
+      <label>סכום (₪)</label>
+      <input type="number" id="tx-amount" step="0.01" min="0" placeholder="0.00">
+      <label>קטגוריה</label>
+      <select id="tx-category"></select>
+      <label>תיאור</label>
+      <input type="text" id="tx-description" placeholder="לדוגמה: תשלום מלקוח / חשבון חשמל">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveTx()">שמירה</button>
+      <button class="btn btn-outline" onclick="closeTxModal()">ביטול</button>
+    </div>
+  </div>
+</div>
 
-var loadMsgs = [
-  {e:'🎉', t:'מחשבים לכם את האירוע המושלם...'},
-  {e:'🔍', t:'בודקים זמינות צוות...'},
-  {e:'🎈', t:'מתאימים תפריט לפי כמות ילדים...'},
-  {e:'💰', t:'מוצאים לכם את המחיר הכי משתלם...'},
-  {e:'✨', t:'כמעט מוכן...'}
-];
+<div id="toast" class="toast"></div>
 
-function runLoader() {
-  var i = 0;
-  var emo = document.getElementById('load-emoji');
-  var txt = document.getElementById('load-text');
-  function next() {
-    txt.style.opacity = '0';
-    setTimeout(function(){
-      emo.textContent = loadMsgs[i % loadMsgs.length].e;
-      txt.textContent = loadMsgs[i % loadMsgs.length].t;
-      txt.style.opacity = '1';
-      i++;
-    }, 350);
-  }
-  next();
-  var iv = setInterval(next, 750);
-  setTimeout(function(){ clearInterval(iv); showResults(); }, 3000);
-}
-
-function showResults() {
-  var total = calcPrice();
-  var minP = roundNice(total * 0.80);
-  var maxP = roundNice(total * 1.05);
-  document.getElementById('res-range').textContent = fmt(minP) + ' – ' + fmt(maxP);
-
-  var addons = [];
-  if (state.snokon) addons.push('סנוקון');
-  if (state.barad) addons.push('ברד');
-  var locTxt = state.loc === 'gushdan' ? 'גוש דן' : 'מחוץ לגוש דן';
-  var timeTxt = state.time === 'afternoon' ? 'אחר הצהריים' : 'ערב / לילה';
-  var peopleTxt = state.pkg === 'shuk' ? state.shukPeople + ' אנשים' : state.kids + ' ילדים';
-
-  var rows = '';
-  rows += '<div class="sum-row"><span class="sum-label">שם</span><span class="sum-val">' + state.name + '</span></div>';
-  rows += '<div class="sum-row"><span class="sum-label">חבילה</span><span class="sum-val">' + state.pkgName + '</span></div>';
-  rows += '<div class="sum-row"><span class="sum-label">כמות</span><span class="sum-val">' + peopleTxt + '</span></div>';
-  if (state.pkg !== 'shuk') {
-    rows += '<div class="sum-row"><span class="sum-label">תוספות</span><span class="sum-val">' + (addons.length ? addons.join(', ') : 'ללא תוספות') + '</span></div>';
-  }
-  rows += '<div class="sum-row"><span class="sum-label">מיקום</span><span class="sum-val">' + locTxt + '</span></div>';
-  rows += '<div class="sum-row"><span class="sum-label">שעה</span><span class="sum-val">' + timeTxt + '</span></div>';
-  document.getElementById('res-summary').innerHTML = rows;
-
-  var addonsMsg = state.pkg !== 'shuk' ? (addons.length ? addons.join(', ') : 'ללא תוספות') : 'לא רלוונטי';
-  var waMsg = 'שלום! קיבלתי הצעת מחיר דרך האתר 🎉\n\n'
-    + 'שם: ' + state.name + '\n'
-    + 'טלפון: ' + state.phone + '\n'
-    + 'חבילה: ' + state.pkgName + '\n'
-    + 'כמות: ' + peopleTxt + '\n'
-    + 'תוספות: ' + addonsMsg + '\n'
-    + 'מיקום: ' + locTxt + '\n'
-    + 'שעה: ' + timeTxt + '\n'
-    + 'טווח מחיר: ' + fmt(minP) + ' – ' + fmt(maxP) + '\n\n'
-    + 'אשמח לקבל מחיר מדויק ולסגור! 😊';
-  document.getElementById('wa-btn').href = 'https://wa.me/972508341820?text=' + encodeURIComponent(waMsg);
-
-  nav('results');
-  confetti();
-}
-
-function confetti() {
-  var wrap = document.getElementById('confetti');
-  wrap.innerHTML = '';
-  var colors = ['#FF6B9D','#FFD700','#9B59B6','#3498DB','#FF6B35','#27AE60','#FF4444'];
-  for (var i = 0; i < 60; i++) {
-    var p = document.createElement('div');
-    p.className = 'conf';
-    p.style.cssText = 'left:' + (Math.random()*100) + '%;'
-      + 'width:' + (Math.random()*10+5) + 'px;'
-      + 'height:' + (Math.random()*10+5) + 'px;'
-      + 'background:' + colors[Math.floor(Math.random()*colors.length)] + ';'
-      + 'animation-duration:' + (Math.random()*2+2) + 's;'
-      + 'animation-delay:' + (Math.random()*1.5) + 's;';
-    wrap.appendChild(p);
-  }
-  setTimeout(function(){ wrap.innerHTML = ''; }, 6000);
-}
-
-function restart() {
-  state = { pkg:null, pkgName:null, pkgPrice:0, kids:30, shukPeople:0, shukPrice:0,
-    snokon:false, barad:false, loc:null, time:null, name:'', phone:'' };
-  history = [];
-  document.querySelectorAll('.pkg-card').forEach(function(c){ c.classList.remove('sel'); });
-  document.querySelectorAll('.shuk-opt').forEach(function(o){ o.classList.remove('sel'); });
-  document.querySelectorAll('.addon-card').forEach(function(c){ c.classList.remove('sel'); });
-  document.querySelectorAll('.opt-btn').forEach(function(b){ b.classList.remove('sel'); });
-  document.querySelectorAll('[id^="chk-"]').forEach(function(c){ c.textContent=''; });
-  document.getElementById('kids-num').textContent = '30';
-  document.getElementById('kids-tip').textContent = '✨ 30 ילדים – הבסיס כלול בחבילה!';
-  document.getElementById('inp-name').value = '';
-  document.getElementById('inp-phone').value = '';
-  ['btn1','btn1b','btn4','btn5','btn6'].forEach(function(id){
-    var b = document.getElementById(id);
-    if(b){ b.disabled=true; b.style.opacity='0.5'; }
-  });
-  showScreen('hero');
-}
-
-// Wire up step4 labels for regular flow when navigating from step3
-var _origContinueStep3 = continueStep3;
-continueStep3 = function() {
-  updateStep4Labels('regular');
-  nav('step4');
-};
-</script>
+<script src="vendor/chart.umd.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
