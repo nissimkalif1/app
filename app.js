@@ -2,27 +2,27 @@
 
 var STORAGE_KEY = 'finapp_v1';
 
-var PALETTE = ['#6C5CE7','#00B894','#0984E3','#E17055','#FDCB6E','#E84393','#00CEC9','#D63031','#A29BFE','#636E72','#00A8FF','#F8A5C2'];
+var PALETTE = ['#1f7a52','#a83a2e','#a97c2f','#3b6e91','#7a5c3e','#5c6b3f','#8a4b6b','#4b7a7a','#8a6423','#6b5b95','#b0763f','#45607a'];
 
 var DEFAULT_STATE = {
   transactions: [],
   categories: {
     income: [
-      { name: 'מכירות', color: '#00B894' },
-      { name: 'שירותים', color: '#0984E3' },
-      { name: 'קארד קום', color: '#6C5CE7' },
-      { name: 'החזרים', color: '#00CEC9' },
-      { name: 'אחר', color: '#636E72' }
+      { name: 'מכירות', color: '#1f7a52' },
+      { name: 'שירותים', color: '#3b6e91' },
+      { name: 'קארד קום', color: '#a97c2f' },
+      { name: 'החזרים', color: '#4b7a7a' },
+      { name: 'אחר', color: '#6b6f68' }
     ],
     expense: [
-      { name: 'שכירות', color: '#D63031' },
-      { name: 'שכר עבודה', color: '#E17055' },
-      { name: 'ציוד ומלאי', color: '#FDCB6E' },
-      { name: 'שיווק ופרסום', color: '#E84393' },
-      { name: 'מיסים ואגרות', color: '#A29BFE' },
-      { name: 'ספקים', color: '#00A8FF' },
-      { name: 'הוצאות משרד', color: '#0984E3' },
-      { name: 'אחר', color: '#636E72' }
+      { name: 'שכירות', color: '#a83a2e' },
+      { name: 'שכר עבודה', color: '#7a5c3e' },
+      { name: 'ציוד ומלאי', color: '#b0763f' },
+      { name: 'שיווק ופרסום', color: '#8a4b6b' },
+      { name: 'מיסים ואגרות', color: '#6b5b95' },
+      { name: 'ספקים', color: '#45607a' },
+      { name: 'הוצאות משרד', color: '#3b6e91' },
+      { name: 'אחר', color: '#6b6f68' }
     ]
   },
   importHistory: []
@@ -49,6 +49,12 @@ function loadState() {
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
+
+/* ===================== ICONS ===================== */
+
+var ICON_EDIT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1z"/><line x1="14" y1="7" x2="17" y2="10"/></svg>';
+var ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><path d="M6 7v13a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7"/><line x1="9" y1="5" x2="15" y2="5"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+var ICON_UNDO = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 3-6.2"/><polyline points="4,4 4,7.5 7.5,7.5"/></svg>';
 
 /* ===================== UTILITIES ===================== */
 
@@ -86,7 +92,7 @@ function categoryColor(type, name) {
   for (var i = 0; i < list.length; i++) {
     if (list[i].name === name) return list[i].color;
   }
-  return '#636E72';
+  return '#6b6f68';
 }
 
 function toast(msg) {
@@ -186,8 +192,8 @@ function renderDashboard() {
     data: {
       labels: monthly.map(function (m) { return m.label; }),
       datasets: [
-        { label: 'הכנסות', data: monthly.map(function (m) { return m.income; }), backgroundColor: '#00B894', borderRadius: 6 },
-        { label: 'הוצאות', data: monthly.map(function (m) { return m.expense; }), backgroundColor: '#D63031', borderRadius: 6 }
+        { label: 'הכנסות', data: monthly.map(function (m) { return m.income; }), backgroundColor: '#1f7a52', borderRadius: 2 },
+        { label: 'הוצאות', data: monthly.map(function (m) { return m.expense; }), backgroundColor: '#a83a2e', borderRadius: 2 }
       ]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
@@ -223,7 +229,7 @@ function renderDashboard() {
     type: 'line',
     data: {
       labels: all.map(function (m) { return m.label; }),
-      datasets: [{ label: 'רווח מצטבר', data: cumData, borderColor: '#6C5CE7', backgroundColor: 'rgba(108,92,231,0.15)', fill: true, tension: 0.3 }]
+      datasets: [{ label: 'רווח מצטבר', data: cumData, borderColor: '#a97c2f', backgroundColor: 'rgba(169,124,47,0.15)', fill: true, tension: 0.3 }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
   });
@@ -283,8 +289,8 @@ function renderTxTable(type) {
       '<td>' + (t.source === 'cardcom' ? 'קארד קום' : 'ידני') + '</td>' +
       '<td class="amount-' + type + '">' + fmtCurrency(t.amount) + '</td>' +
       '<td class="row-actions">' +
-        '<button title="עריכה" onclick="editTx(\'' + t.id + '\')">✏️</button>' +
-        '<button title="מחיקה" onclick="deleteTx(\'' + t.id + '\')">🗑️</button>' +
+        '<button title="עריכה" onclick="editTx(\'' + t.id + '\')">' + ICON_EDIT + '</button>' +
+        '<button title="מחיקה" onclick="deleteTx(\'' + t.id + '\')">' + ICON_TRASH + '</button>' +
       '</td>' +
     '</tr>';
   }).join('');
@@ -388,7 +394,7 @@ function renderPnl() {
       datasets: [{
         label: 'רווח/הפסד',
         data: monthly.map(function (m) { return m.net; }),
-        backgroundColor: monthly.map(function (m) { return m.net >= 0 ? '#00B894' : '#D63031'; }),
+        backgroundColor: monthly.map(function (m) { return m.net >= 0 ? '#1f7a52' : '#a83a2e'; }),
         borderRadius: 6
       }]
     },
@@ -611,7 +617,7 @@ function renderImportHistory() {
       '<td>' + h.fileName + '</td>' +
       '<td>' + (h.type === 'income' ? 'הכנסה' : 'הוצאה') + '</td>' +
       '<td>' + h.count + '</td>' +
-      '<td class="row-actions"><button title="ביטול ייבוא זה" onclick="undoImport(\'' + h.id + '\')">↩️</button></td>' +
+      '<td class="row-actions"><button title="ביטול ייבוא זה" onclick="undoImport(\'' + h.id + '\')">' + ICON_UNDO + '</button></td>' +
     '</tr>';
   }).join('');
 }
@@ -811,8 +817,23 @@ function resetAllData() {
 
 /* ===================== INIT ===================== */
 
+function isDarkTheme() {
+  var attr = document.documentElement.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function applyChartTheme() {
+  var dark = isDarkTheme();
+  Chart.defaults.color = dark ? '#9aa39c' : '#5c6660';
+  Chart.defaults.borderColor = dark ? '#2d332c' : '#dde2dd';
+  Chart.defaults.font.family = "'Heebo', 'Segoe UI', Arial, sans-serif";
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   loadState();
+  applyChartTheme();
   initNav();
   initImport();
   initRestore();
@@ -824,4 +845,11 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('report-to').value = to;
 
   renderDashboard();
+
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+      applyChartTheme();
+      renderView(document.querySelector('.nav-btn.active').getAttribute('data-view'));
+    });
+  }
 });
